@@ -1,0 +1,90 @@
+#!/bin/bash -e
+
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+export PATH=/opt/scancode-toolkit:/opt/jre/bin:/opt/ort/bin:/opt/vale/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+
+run_vale() {
+  project_vale_styles_path=${PWD}/.vale-styles
+  VALE_STYLES_PATH=$(mktemp -d)
+
+  if [ -d "${project_vale_styles_path}" ]; then
+    cp -R "${project_vale_styles_path}"/* "${VALE_STYLES_PATH}"
+  fi
+
+  export VALE_STYLES_PATH
+  vale --config /etc/ocs/vale/vale.ini sync
+  vale --config /etc/ocs/vale/vale.ini --no-wrap .
+}
+
+run_ort() {
+  [ -d "${ORT_OUT}" ] || mkdir -p "${ORT_OUT}"
+  find "${ORT_OUT}" -not -name .gitkeep -type f -exec rm -f {} \;
+  CI_PROJECT_DIR=$(realpath .)
+  export CI_PROJECT_DIR
+
+  # Configure git to allow the instruct ORT to access the local repository instead of a remote origin.
+  git config --global --add safe.directory /src
+  origin=$(git remote get-url origin)
+  git config --global url."file:///src/.git".insteadOf ${origin}
+
+  set +e
+  echo "ANALYZING"
+  ort -c /etc/ocs/ort/config.yml analyze --input-dir "${PWD}" --output-dir "${ORT_OUT}"
+  analyze_status=$?
+
+  ort_file="${ORT_OUT}/analyzer-result.yml"
+
+  if [ "${ORT_ENABLE_SCANNER}" != "false" ]; then
+    echo "SCANNING"
+    ort -c /etc/ocs/ort/config.yml scan --ort-file "${ort_file}" --output-dir "${ORT_OUT}"
+    scan_status=$?
+    ort_file=${ORT_OUT}/scan-result.yml
+  else
+    scan_status=0
+  fi
+
+  if [ "${ORT_ENABLE_EVALUATOR}" != "false" ]; then
+    echo "EVALUATING"
+    ort -c /etc/ocs/ort/config.yml evaluate --license-classifications-file "${ORT_EVALUATOR_LICENSE_CLASSIFICATIONS}" --package-curations-file "${ORT_EVALUATOR_CURATIONS}" --rules-file "${ORT_EVALUATOR_RULES}" -i "${ort_file}" --output-dir "${ORT_OUT}"
+    eval_status=$?
+    ort_file=${ORT_OUT}/evaluation-result.yml
+  else
+    eval_status=0
+  fi
+
+  echo "REPORTING"
+  report_options=
+  for report_option in ${ORT_REPORT_OPTIONS}; do
+    report_options="${report_options} -O ${report_option}"
+  done
+  # shellcheck disable=SC2086
+  ort -c /etc/ocs/ort/config.yml report --ort-file "${ort_file}" --output-dir "${ORT_OUT}" --report-formats="${ORT_REPORT_FORMAT}" $report_options
+  report_status=$?
+
+  set -e
+  pushd "${ORT_OUT}" &> /dev/null
+  echo "The following reports have been emitted into ${ORT_OUT}"
+  find . -not -name .gitkeep -type f
+  popd &> /dev/null
+
+  if [ "${analyze_status}" != 0 ] || [ "${scan_status}" != 0 ] || [ "${eval_status}" != 0 ] || [ "${report_status}" != 0 ]; then
+    exit 1
+  fi
+}
+
+run_shell() {
+  exec /bin/bash
+}
+
+echo "Workdir: ${PWD}"
+
+case "$0" in
+  "/entry/vale") run_vale;;
+  "/entry/ort") run_ort;;
+  "/entry/shell") run_shell;;
+  "/entry/tree") tree -a;;
+  *) echo "Command $0 not found"; usage; exit 1;;
+esac

@@ -1,0 +1,69 @@
+#!/bin/bash -ex
+
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+scan_code_source=$1
+scan_code_source_schema=$2
+scan_code_version=$3
+credentials_secret=$4
+
+usage() {
+echo "Usage: $0 scan_code_source scan_code_source_schema scan_code_version credentials_secret"
+}
+
+
+if [ "${scan_code_source}" == "" ]; then
+    echo "Scan Code source not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${scan_code_source_schema}" == "" ]; then
+    echo "Schema of Scan Code source not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${credentials_secret}" == "" ]; then
+    echo "Credential secret of Scan Code" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${scan_code_version}" == "" ]; then
+    echo "Scan Code version not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+scan_code_major=$(echo $scan_code_version | cut -f1 -d.)
+scan_code_minor=$(echo $scan_code_version | cut -f2 -d.)
+scan_code_patch=$(echo $scan_code_version | cut -f3 -d.)
+
+if [ "${scan_code_major}" == "" ] || [ "${scan_code_minor}" == "" ] || [ "${scan_code_patch}" == "" ]; then
+  echo "scan_code version must be set in the form: <major>.<minor>.<patch>" >> /dev/stderr
+  usage
+  exit 1
+fi
+
+url="${scan_code_source_schema}://${scan_code_source}/v${scan_code_major}.${scan_code_minor}.${scan_code_patch}/scancode-toolkit-v${scan_code_major}.${scan_code_minor}.${scan_code_patch}_py3.13-linux.tar.gz"
+echo "Downloading from: $url"
+
+# The following information should not be logged
+set +x
+credentials=
+if [ -f "${credentials_secret}" ]; then
+  credentials="-u $(cat "${credentials_secret}")"
+fi
+
+curl $credentials -L "$url" > /opt/scan_code.tgz
+set -x
+
+ls -la /opt
+
+pushd /opt
+tar -xzf scan_code.tgz
+rm -f scan_code.tgz
+mv scancode-toolkit-v${scan_code_major}.${scan_code_minor}.${scan_code_patch} scancode-toolkit
+popd

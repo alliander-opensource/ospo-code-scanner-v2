@@ -1,0 +1,72 @@
+#!/bin/bash -ex
+
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+vale_source=$1
+vale_source_schema=$2
+vale_version=$3
+credentials_secret=$4
+
+usage() {
+echo "Usage: $0 vale_source vale_source_schema vale_version credentials_secret"
+}
+
+
+if [ "${vale_source}" == "" ]; then
+    echo "Vale source not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${vale_source_schema}" == "" ]; then
+    echo "Schema of Vale source not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${credentials_secret}" == "" ]; then
+    echo "Credential secret of Vale" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${vale_version}" == "" ]; then
+    echo "Vale version not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+vale_major=$(echo $vale_version | cut -f1 -d.)
+vale_minor=$(echo $vale_version | cut -f2 -d.)
+vale_patch=$(echo $vale_version | cut -f3 -d.)
+
+if [ "${vale_major}" == "" ] || [ "${vale_minor}" == "" ] || [ "${vale_patch}" == "" ]; then
+  echo "Vale version must be set in the form: <major>.<minor>.<patch>" >> /dev/stderr
+  usage
+  exit 1
+fi
+
+url="${vale_source_schema}://${vale_source}/v${vale_major}.${vale_minor}.${vale_patch}/vale_${vale_major}.${vale_minor}.${vale_patch}_Linux_64-bit.tar.gz"
+echo "Downloading from: $url"
+
+# The following information should not be logged
+set +x
+credentials=
+if [ -f "${credentials_secret}" ]; then
+  credentials="-u $(cat "${credentials_secret}")"
+fi
+
+curl $credentials -L "$url" > /opt/vale.tgz
+set -x
+
+pushd /opt
+mkdir -p vale/bin
+mv vale.tgz vale/bin/
+pushd vale/bin/
+tar -xzf vale.tgz
+rm -f vale.tgz
+mv LICENSE ..
+mv README.md ..
+popd
+popd

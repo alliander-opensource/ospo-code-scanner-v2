@@ -1,0 +1,67 @@
+#!/bin/bash -ex
+
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+ort_source=$1
+ort_source_schema=$2
+ort_version=$3
+credentials_secret=$4
+
+usage() {
+echo "Usage: $0 ort_source ort_source_schema ort_version credentials_secret"
+}
+
+
+if [ "${ort_source}" == "" ]; then
+    echo "ORT source not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${ort_source_schema}" == "" ]; then
+    echo "Schema of ORT source not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${credentials_secret}" == "" ]; then
+    echo "Credential secret of ORT" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${ort_version}" == "" ]; then
+    echo "ORT version not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+ort_major=$(echo $ort_version | cut -f1 -d.)
+ort_minor=$(echo $ort_version | cut -f2 -d.)
+ort_patch=$(echo $ort_version | cut -f3 -d.)
+
+if [ "${ort_major}" == "" ] || [ "${ort_minor}" == "" ] || [ "${ort_patch}" == "" ]; then
+  echo "ORT version must be set in the form: <major>.<minor>.<patch>" >> /dev/stderr
+  usage
+  exit 1
+fi
+
+url="${ort_source_schema}://${ort_source}/${ort_major}.${ort_minor}.${ort_patch}/ort-${ort_major}.${ort_minor}.${ort_patch}.tgz"
+echo "Downloading from: $url"
+
+# The following information should not be logged
+set +x
+credentials=
+if [ -f "${credentials_secret}" ]; then
+  credentials="-u $(cat "${credentials_secret}")"
+fi
+
+curl $credentials -L "$url" > /opt/ort.tgz
+set -x
+
+pushd /opt
+tar -xzf ort.tgz
+rm -f ort.tgz
+mv ort-${ort_major}.${ort_minor}.${ort_patch} ort
+popd

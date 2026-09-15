@@ -1,0 +1,66 @@
+#!/bin/bash -ex
+
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+jdk_source=$1
+jdk_source_schema=$2
+adoptium_jdk_version=$3
+credentials_secret=$4
+
+usage() {
+echo "Usage: $0 jdk_source jdk_source_schema adoptium_jdk_version credentials_secret"
+}
+
+
+if [ "${jdk_source}" == "" ]; then
+    echo "JDK source not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${jdk_source_schema}" == "" ]; then
+    echo "Schema of JDK source not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${credentials_secret}" == "" ]; then
+    echo "Credential secret of JDK not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${adoptium_jdk_version}" == "" ]; then
+    echo "Adoptium JDK version not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+adoptium_jdk_major=$(echo $adoptium_jdk_version | cut -f1 -d.)
+adoptium_jdk_minor=$(echo $adoptium_jdk_version | cut -f2 -d.)
+adoptium_jdk_patch_update=$(echo $adoptium_jdk_version | cut -f3 -d.)
+adoptium_jdk_patch=$(echo $adoptium_jdk_patch_update | cut -f1 -d+)
+adoptium_jdk_update=$(echo $adoptium_jdk_patch_update | cut -f2 -d+)
+
+if [ "${adoptium_jdk_major}" == "" ] || [ "${adoptium_jdk_minor}" == "" ] || [ "${adoptium_jdk_patch}" == "" ] || [ "${adoptium_jdk_update}" == "" ]; then
+  echo "Adoptium JDK version must be set in the form: <major>.<minor>.<patch>+<update>" >> /dev/stderr
+  usage
+  exit 1
+fi
+
+# The following information should not be logged
+download_url="${jdk_source_schema}://${jdk_source}/jdk-${adoptium_jdk_major}.${adoptium_jdk_minor}.${adoptium_jdk_patch}+${adoptium_jdk_update}/OpenJDK${adoptium_jdk_major}U-jre_x64_linux_hotspot_${adoptium_jdk_major}.${adoptium_jdk_minor}.${adoptium_jdk_patch}_${adoptium_jdk_update}.tar.gz"
+set +x
+credentials=
+if [ -f "${credentials_secret}" ]; then
+  credentials="-u $(cat "${credentials_secret}")"
+fi
+curl $credentials -L "${download_url}" > /opt/jre.tgz
+set -x
+
+pushd /opt
+tar -xzf jre.tgz
+rm -f jre.tgz
+mv jdk-${adoptium_jdk_major}.${adoptium_jdk_minor}.${adoptium_jdk_patch}+${adoptium_jdk_update}-jre jre
+popd

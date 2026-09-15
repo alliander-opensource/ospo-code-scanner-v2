@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+- id: vale
+  name: Perform linguistic linting
+  language: docker_image
+  # For local development use tag of built container 'ospo-code-scanner /entry/vale'
+  entry: ghcr.io/<owner>/ospo-code-scanner:<version> /entry/vale
+  pass_filenames: false
+  always_run: true
+  require_serial: true
+- id: ort
+  name: OSS review toolkit scan
+  language: docker_image
+  # For local development use tag of built container 'ospo-code-scanner /entry/ort'
+  entry: ghcr.io/<owner>/ospo-code-scanner:<version> /entry/ort
+  pass_filenames: false
+  always_run: true
+  require_serial: true

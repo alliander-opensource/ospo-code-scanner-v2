@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+# OSS-Review-Toolkit template configuration
+# =========================================
+# Please use at your own discretion, and adapt this configuration (or mount the configuration) for a more
+# suitable configuration.
+
+ort:
+  version: "2.0"
+  analysers:
+    enabled: true
+
+  downloader:
+    sourceCodeOrigins: [VCS]
+
+  scanner:
+    storages:
+      fileBasedStorage:
+        backend:
+          localFileStorage:
+            directory: "./scan-results"
+            compression: false
+
+    storageReaders: ["fileBasedStorage"]
+    storageWriters: ["fileBasedStorage"]

@@ -1,0 +1,13 @@
+#!/bin/bash -e
+
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+# If a build-config file exists, it is read and added to the docker image build arguments
+aux_build_config=
+if [ -f "build-config" ]; then
+  aux_build_config=$(cat "build-config" | xargs)
+fi
+
+exe="docker image build --platform=linux/amd64 --progress=plain -f Containerfile -t ospo-code-scanner ${aux_build_config} ."
+$exe

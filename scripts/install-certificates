@@ -1,0 +1,10 @@
+#!/bin/bash -ex
+
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+for entry in $(ls /usr/share/ca-certificates); do
+  echo $entry >> /etc/ca-certificates.conf
+done
+
+update-ca-certificates

@@ -1,0 +1,79 @@
+#!/bin/bash -ex
+
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+apt_repository=$1
+apt_security_repository=$2
+apt_repository_schema=$3
+auto_trust=$4
+credentials_secret=$5
+
+shift
+shift
+shift
+shift
+shift
+
+usage() {
+echo "Usage: $0 apt_repository apt_security_repository apt_repository_schema credentials_secret auto_trust"
+}
+
+
+if [ "${apt_repository}" == "" ]; then
+    echo "APT repository to Debian not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${apt_security_repository}" == "" ]; then
+    echo "APT security repository to Debian not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+
+if [ "${apt_repository_schema}" == "" ]; then
+    echo "Schema of APT repository to Debian not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+if [ "${auto_trust}" != "no" ] && [ "${auto_trust}" != "yes" ]; then
+      echo "Automatic trust of repositories not configured correctly, must be yes or not" >> /dev/stderr
+      usage
+      exit 1
+fi
+
+if [ "${credentials_secret}" == "" ]; then
+    echo "Credential secret of APT repositories not set" >> /dev/stderr
+    usage
+    exit 1
+fi
+
+set +x
+
+credentials=
+if [ -f "${credentials_secret}" ]; then
+  credentials=$(cat "${credentials_secret}")@
+fi
+
+
+cat > /etc/apt/sources.list.d/debian.sources << EOF
+Types: deb
+URIs: ${apt_repository_schema}://${credentials}${apt_repository}
+Suites: trixie trixie-updates
+Components: main
+Trusted: ${auto_trust}
+
+Types: deb
+URIs: ${apt_repository_schema}://${credentials}${apt_security_repository}
+Suites: trixie-security
+Components: main
+Trusted: ${auto_trust}
+EOF
+
+set -x
+
+
+apt $@ -y --allow-unauthenticated

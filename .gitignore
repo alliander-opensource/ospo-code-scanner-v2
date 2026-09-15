@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+.idea/
+.vscode/
+certificates/*
+custom-apt.conf.d/*
+build-config
+ort-out
