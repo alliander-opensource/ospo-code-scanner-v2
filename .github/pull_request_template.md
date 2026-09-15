@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 ## Description
 
 Please include a summary of the changes and the related issue.
