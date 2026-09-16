@@ -81,7 +81,8 @@ run_shell() {
 
 echo "Workdir: ${PWD}"
 
-case "$0" in
+command=${1:-$0}
+case "${command}" in
   "/entry/vale") run_vale;;
   "/entry/ort") run_ort;;
   "/entry/shell") run_shell;;
