@@ -21,14 +21,14 @@ repos:
   - id: vale
     name: Perform linguistic linting
     language: docker_image
-    entry: ospo-code-scanner /entry/vale
+    entry: --entrypoint vale ospo-code-scanner
     pass_filenames: false
     always_run: true
     require_serial: true
   - id: ort
     name: OSS review toolkit scan
     language: docker_image
-    entry: ospo-code-scanner /entry/ort
+    entry: --entrypoint ort ospo-code-scanner
     pass_filenames: false
     always_run: true
     require_serial: true
