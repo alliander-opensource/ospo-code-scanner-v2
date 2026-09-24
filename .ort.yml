@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: Copyright contributors to the OSPO Code Scanner project
+# SPDX-License-Identifier: Apache-2.0
+
+excludes:
+  paths:
+    - pattern: "**/license-classifications.yml"
+      reason: DATA_FILE_OF
+      comment: "Instructs the different licenses, should not be scanned to detect licenses"
+
+    - pattern: "CODE_OF_CONDUCT.md"
+      reason: DOCUMENTATION_OF
+      comment: "Instructs how to communicate with the community, can not be linked to and is no part of the delivery"

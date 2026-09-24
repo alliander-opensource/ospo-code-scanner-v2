@@ -43,12 +43,18 @@ val copyleftLimitedLicenses = licenseClassifications.licensesByCategory["copylef
 
 val publicDomainLicenses = licenseClassifications.licensesByCategory["public-domain"].orEmpty()
 
+val informational = licenseClassifications.licensesByCategory["informational"].orEmpty()
+
+val legalDocuments = licenseClassifications.licensesByCategory["legal-document"].orEmpty()
+
 // The complete set of licenses covered by policy rules.
 val handledLicenses = listOf(
     permissiveLicenses,
     publicDomainLicenses,
     copyleftLicenses,
-    copyleftLimitedLicenses
+    copyleftLimitedLicenses,
+    informational,
+    legalDocuments
 ).flatten().let {
     it.getDuplicates().let { duplicates ->
         require(duplicates.isEmpty()) {
@@ -109,6 +115,9 @@ fun RuleSet.unhandledLicenseRule() = packageRule("UNHANDLED_LICENSE") {
             -isExcluded()
             -isHandled()
         }
+
+        println("DEBUG: license=$license")
+        println("DEBUG: source=$licenseSource")
 
         // Throw an error message including guidance how to fix the issue.
         error(
@@ -363,12 +372,7 @@ fun RuleSet.wrongLicenseInLicenseFileRule() = projectSourceRule("WRONG_LICENSE_I
 /**
  * The set of policy rules.
  */
-val ciProjectDir = System.getenv("CI_PROJECT_DIR")
-val ruleSet = ruleSet(ortResult, licenseInfoResolver, resolutionProvider, SourceTreeResolver.forLocalDirectory(
-    File(
-        ciProjectDir
-    )
-)) {
+val ruleSet = ruleSet(ortResult, licenseInfoResolver, resolutionProvider) {
     // Rules which get executed for each package:
     unhandledLicenseRule()
     unmappedDeclaredLicenseRule()

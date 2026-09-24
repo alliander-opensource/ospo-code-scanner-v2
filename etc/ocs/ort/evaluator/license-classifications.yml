@@ -24,8 +24,20 @@ categories:
   description: >-
     A marker category that indicates that the licenses assigned to it require that the source code of the packages
     needs to be provided.
+- name: "informational"
+  description: >-
+    A marker to for handling informational data, such as data which can not be asserted
+- name: "legal-document"
+  description: >-
+    Contains legal documents which are agreed to be used, such as the DCO-1.1 agreement
 
 categorizations:
+- id: "NOASSERTION"
+  categories:
+  - "informational"
+- id: "LicenseRef-scancode-dco-1.1"
+  categories:
+  - "legal-document"
 - id: "AGPL-1.0"
   categories:
   - "copyleft"
